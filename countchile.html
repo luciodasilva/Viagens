@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Chile 2026 • Santiago & Atacama</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+:root{
+    --chile-blue:#0039A6;
+    --chile-red:#D52B1E;
+    --glass:rgba(12,20,40,.78);
+    --text:#FFFFFF;
+    --secondary:#DCE8FF;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:'Montserrat',sans-serif;
+    min-height:100vh;
+    color:var(--text);
+    overflow:hidden;
+}
+
+/* Fundo com transição */
+.bg{
+    position:fixed;
+    inset:0;
+    background-size:cover;
+    background-position:center;
+    transition:opacity 3s ease;
+}
+
+#bg1{
+    opacity:1;
+    background-image:
+    linear-gradient(
+        rgba(0,0,0,.55),
+        rgba(0,0,0,.65)
+    ),
+    url('https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=2000&q=80');
+}
+
+#bg2{
+    opacity:0;
+    background-image:
+    linear-gradient(
+        rgba(0,0,0,.55),
+        rgba(0,0,0,.65)
+    ),
+    url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2000&q=80');
+}
+
+.container{
+    position:relative;
+    z-index:10;
+    min-height:100vh;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+
+    padding:20px;
+    text-align:center;
+}
+
+.flag{
+    font-size:3.5rem;
+}
+
+h1{
+    margin-top:10px;
+    font-size:clamp(2.5rem,7vw,5rem);
+    font-weight:800;
+}
+
+.subtitle{
+    margin-top:10px;
+    color:var(--secondary);
+    font-size:1.15rem;
+}
+
+.route{
+    margin-top:18px;
+    font-size:1rem;
+    letter-spacing:3px;
+    color:#ffffff;
+}
+
+.countdown{
+    margin-top:45px;
+
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+    width:min(900px,100%);
+}
+
+.card{
+    background:var(--glass);
+    backdrop-filter:blur(14px);
+
+    border:1px solid rgba(255,255,255,.15);
+
+    border-radius:22px;
+
+    padding:28px 15px;
+
+    box-shadow:
+    0 10px 40px rgba(0,0,0,.35);
+}
+
+.number{
+    font-size:clamp(2rem,6vw,4rem);
+    font-weight:800;
+}
+
+.label{
+    margin-top:10px;
+    color:var(--secondary);
+    text-transform:uppercase;
+    letter-spacing:2px;
+}
+
+.flight{
+    margin-top:35px;
+
+    background:var(--glass);
+
+    padding:18px 30px;
+
+    border-radius:18px;
+
+    color:var(--secondary);
+
+    line-height:1.8;
+}
+
+.progress-area{
+    margin-top:35px;
+    width:min(800px,100%);
+}
+
+.progress-title{
+    margin-bottom:10px;
+    color:var(--secondary);
+}
+
+.progress-bar{
+    width:100%;
+    height:18px;
+
+    background:rgba(255,255,255,.15);
+
+    border-radius:50px;
+
+    overflow:hidden;
+}
+
+.progress-fill{
+    height:100%;
+    width:0%;
+
+    background:
+    linear-gradient(
+    90deg,
+    var(--chile-red),
+    var(--chile-blue)
+    );
+}
+
+.progress-text{
+    margin-top:10px;
+    color:var(--secondary);
+}
+
+.highlights{
+    margin-top:40px;
+
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:20px;
+
+    width:min(900px,100%);
+}
+
+.highlight{
+    background:var(--glass);
+
+    border-radius:20px;
+
+    padding:25px;
+
+    text-align:left;
+}
+
+.highlight h3{
+    margin-bottom:10px;
+}
+
+.highlight p{
+    line-height:1.7;
+    color:var(--secondary);
+}
+
+.footer{
+    margin-top:40px;
+    color:var(--secondary);
+}
+
+@media(max-width:768px){
+
+    .countdown{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .highlights{
+        grid-template-columns:1fr;
+    }
+
+}
+
+</style>
+</head>
+<body>
+
+<div id="bg1" class="bg"></div>
+<div id="bg2" class="bg"></div>
+
+<div class="container">
+
+<div class="flag">🇨🇱 ✈️ ❄️</div>
+
+<h1>Chile 2026</h1>
+
+<div class="subtitle">
+Contagem regressiva para nossa aventura em família
+</div>
+
+<div class="route">
+SÃO PAULO → SANTIAGO → ATACAMA
+</div>
+
+<div class="countdown">
+
+<div class="card">
+<div id="days" class="number">0</div>
+<div class="label">Dias</div>
+</div>
+
+<div class="card">
+<div id="hours" class="number">0</div>
+<div class="label">Horas</div>
+</div>
+
+<div class="card">
+<div id="minutes" class="number">0</div>
+<div class="label">Minutos</div>
+</div>
+
+<div class="card">
+<div id="seconds" class="number">0</div>
+<div class="label">Segundos</div>
+</div>
+
+</div>
+
+<div class="flight">
+✈️ Embarque em Guarulhos<br>
+📅 06/07/2026 às 20:25
+</div>
+
+<div class="progress-area">
+
+<div class="progress-title">
+Preparativos para a viagem
+</div>
+
+<div class="progress-bar">
+<div id="progressFill" class="progress-fill"></div>
+</div>
+
+<div id="progressText" class="progress-text"></div>
+
+</div>
+
+<div class="highlights">
+
+<div class="highlight">
+<h3>🏙️ Santiago</h3>
+<p>
+Centro histórico, Sky Costanera,
+mercados, gastronomia chilena
+e a Cordilheira dos Andes coberta de neve.
+</p>
+</div>
+
+<div class="highlight">
+<h3>🏜️ Atacama</h3>
+<p>
+Piedras Rojas, Lagunas Altiplânicas,
+Vale da Lua, Geysers del Tatio
+e um dos céus mais bonitos do planeta.
+</p>
+</div>
+
+</div>
+
+<div class="footer">
+Família Silva • Chile 2026 🇨🇱
+</div>
+
+</div>
+
+<script>
+
+const tripDate =
+new Date("2026-07-06T20:25:00");
+
+const planningDate =
+new Date("2025-12-01T00:00:00");
+
+function updateCountdown(){
+
+    const now = new Date();
+
+    const diff = tripDate - now;
+
+    if(diff <= 0){
+        document.body.innerHTML =
+        `
+        <div style="
+        background:#06142c;
+        height:100vh;
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        align-items:center;
+        color:white;
+        font-family:Montserrat;
+        text-align:center;
+        ">
+        <h1>🇨🇱✈️</h1>
+        <h2>Boa viagem!</h2>
+        <p>O Chile chegou!</p>
+        </div>
+        `;
+        return;
+    }
+
+    const days =
+    Math.floor(diff/(1000*60*60*24));
+
+    const hours =
+    Math.floor((diff/(1000*60*60))%24);
+
+    const minutes =
+    Math.floor((diff/(1000*60))%60);
+
+    const seconds =
+    Math.floor((diff/1000)%60);
+
+    document.getElementById("days").textContent = days;
+    document.getElementById("hours").textContent = hours;
+    document.getElementById("minutes").textContent = minutes;
+    document.getElementById("seconds").textContent = seconds;
+
+    const total = tripDate - planningDate;
+    const elapsed = now - planningDate;
+
+    let progress = (elapsed/total)*100;
+
+    progress = Math.max(0,Math.min(progress,100));
+
+    document.getElementById("progressFill").style.width =
+    progress + "%";
+
+    document.getElementById("progressText").innerHTML =
+    progress.toFixed(1) +
+    "% da jornada até o embarque";
+}
+
+updateCountdown();
+setInterval(updateCountdown,1000);
+
+/* Alterna Santiago e Atacama */
+let showingFirst = true;
+
+setInterval(() => {
+
+    if(showingFirst){
+        document.getElementById("bg1").style.opacity = 0;
+        document.getElementById("bg2").style.opacity = 1;
+    }else{
+        document.getElementById("bg1").style.opacity = 1;
+        document.getElementById("bg2").style.opacity = 0;
+    }
+
+    showingFirst = !showingFirst;
+
+},15000);
+
+</script>
+
+</body>
+</html>
