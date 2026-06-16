@@ -420,52 +420,53 @@ footer{
 
 <footer>
 ❤️ Nossa coleção de memórias
-</footer>
-<script>
+</footer><script>
 
 const SENHA = "000000";
 
-function entrar(){
+function entrar() {
 
-    const senhaDigitada =
-        document.getElementById("senha").value;
+    const senhaDigitada = document.getElementById("senha").value;
 
-    if(senhaDigitada === SENHA){
+    if (senhaDigitada === SENHA) {
 
-        document.getElementById("loginScreen")
-            .style.display = "none";
+        document.getElementById("loginScreen").style.display = "none";
 
         sessionStorage.setItem(
             "memoriasLiberadas",
             "sim"
         );
 
-    }else{
+    } else {
 
-        document.getElementById("erro")
-            .style.display = "block";
+        document.getElementById("erro").style.display = "block";
+
     }
 }
 
-if(
-    sessionStorage.getItem(
-        "memoriasLiberadas"
-    ) === "sim"
-){
-    document.getElementById(
-        "loginScreen"
-    ).style.display = "none";
-}
+window.onload = function(){
 
-document
-.getElementById("senha")
-.addEventListener("keypress",function(e){
-
-    if(e.key==="Enter"){
-        entrar();
+    if(
+        sessionStorage.getItem(
+            "memoriasLiberadas"
+        ) === "sim"
+    ){
+        document.getElementById(
+            "loginScreen"
+        ).style.display = "none";
     }
 
-});
+    document
+    .getElementById("senha")
+    .addEventListener("keypress",function(e){
+
+        if(e.key==="Enter"){
+            entrar();
+        }
+
+    });
+
+};
 
 </script>
 
