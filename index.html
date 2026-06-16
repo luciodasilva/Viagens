@@ -108,7 +108,22 @@ body{
 .btn:hover{
     background:#1d4ed8;
 }
+.btn-disabled{
+    background:#475569;
+    cursor:not-allowed;
+    pointer-events:none;
+    opacity:.8;
+}
 
+.btn-disabled:hover{
+    background:#475569;
+}
+
+.content .btn{
+    display:block;
+    text-align:center;
+    margin-top:12px;
+}
 footer{
     text-align:center;
     padding:30px;
@@ -362,34 +377,42 @@ footer{
 
     </div>
 
-    <!-- CHILE -->
+<!-- CHILE -->
 
-    <div class="card">
+<div class="card">
 
-        <img src="https://www.omint.com.br/wp-content/uploads/2025/05/GettyImages-980374148-min.png">
+    <img src="https://www.omint.com.br/wp-content/uploads/2025/05/GettyImages-980374148-min.png">
 
-        <div class="content">
+    <div class="content">
 
-            <span class="tag">🇨🇱 Em Breve</span>
+        <span class="tag">🇨🇱 Em Breve</span>
 
-            <h3>Chile</h3>
+        <h3>Chile</h3>
 
-            <div class="locations">
-                ├── Santiago<br>
-                ├── San Pedro de Atacama<br>
-                ├── Valle de la Luna<br>
-                ├── Lagunas Altiplânicas<br>
-                ├── Piedras Rojas<br>
-                └── Geysers del Tatio
-            </div>
-
-            <a class="btn" href="chile.html">
-                Explorar Viagem
-            </a>
-
+        <div class="locations">
+            ├── Santiago<br>
+            ├── San Pedro de Atacama<br>
+            ├── Valle de la Luna<br>
+            ├── Lagunas Altiplânicas<br>
+            ├── Piedras Rojas<br>
+            └── Geysers del Tatio
         </div>
 
+        <a class="btn btn-disabled" href="#">
+            📸 Álbum em Breve
+        </a>
+
+        <a class="btn" href="contador-chile.html">
+            ⏳ Contagem Regressiva
+        </a>
+
+        <a class="btn" href="roteiro-chile.html">
+            🗺️ Roteiro Santiago & Atacama
+        </a>
+
     </div>
+
+</div>
 
 </div>
 
@@ -399,7 +422,7 @@ footer{
 ❤️ Nossa coleção de memórias
 </footer>
 <script>
-document.body.style.display = "block";
+
 const SENHA = "000000";
 
 function entrar(){
