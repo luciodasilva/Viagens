@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Monitor de Neve • Chile 2026</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    background:#0f172a;
+    color:white;
+}
+
+.hero{
+    height:35vh;
+    background:
+        linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.65)),
+        url('https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&w=1600&q=80');
+    background-size:cover;
+    background-position:center;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    flex-direction:column;
+}
+
+.hero h1{
+    font-size:3rem;
+}
+
+.hero p{
+    margin-top:10px;
+    color:#e2e8f0;
+}
+
+.container{
+    max-width:1100px;
+    margin:auto;
+    padding:40px 20px;
+}
+
+.back{
+    display:inline-block;
+    margin-bottom:30px;
+    color:#93c5fd;
+    text-decoration:none;
+}
+
+.section-title{
+    text-align:center;
+    margin:20px 0 30px;
+    color:#93c5fd;
+}
+
+.card{
+    background:#1e293b;
+    border-radius:18px;
+    padding:25px;
+    margin-bottom:25px;
+}
+
+.card h2{
+    color:#60a5fa;
+    margin-bottom:15px;
+}
+
+.info{
+    line-height:1.9;
+    color:#e2e8f0;
+}
+
+.rank{
+    background:#1e293b;
+    border-radius:18px;
+    padding:25px;
+    margin-top:30px;
+}
+
+.rank h2{
+    color:#60a5fa;
+    margin-bottom:15px;
+}
+
+footer{
+    text-align:center;
+    padding:30px;
+    color:#94a3b8;
+}
+
+.loading{
+    color:#94a3b8;
+}
+
+.good{
+    color:#4ade80;
+}
+
+.medium{
+    color:#facc15;
+}
+
+.bad{
+    color:#f87171;
+}
+
+</style>
+</head>
+<body>
+
+<section class="hero">
+    <h1>❄️ Monitor de Neve</h1>
+    <p>Valle Nevado • Farellones • Portillo</p>
+</section>
+
+<div class="container">
+
+<a class="back" href="index.html">
+← Voltar para Memórias de Viagem
+</a>
+
+<h2 class="section-title">🏔️ Condições Atuais</h2>
+
+<div id="resorts"></div>
+
+<div class="rank">
+    <h2>🏆 Ranking de Neve Prevista (7 dias)</h2>
+    <div id="ranking" class="loading">
+        Carregando...
+    </div>
+</div>
+
+</div>
+
+<footer>
+❤️ Chile 2026 • Lucio & Fernanda
+</footer>
+
+<script>
+
+const resorts = [
+{
+    nome:"Valle Nevado",
+    lat:-33.350,
+    lon:-70.253
+},
+{
+    nome:"Farellones",
+    lat:-33.349,
+    lon:-70.292
+},
+{
+    nome:"Portillo",
+    lat:-32.836,
+    lon:-70.129
+}
+];
+
+function classificarNeve(total){
+
+    if(total >= 40){
+        return {
+            texto:"🟢 Excelente",
+            classe:"good"
+        };
+    }
+
+    if(total >= 15){
+        return {
+            texto:"🟡 Boa",
+            classe:"medium"
+        };
+    }
+
+    return {
+        texto:"🔴 Fraca",
+        classe:"bad"
+    };
+}
+
+async function carregarDados(){
+
+    const container = document.getElementById("resorts");
+    const rankingDiv = document.getElementById("ranking");
+
+    container.innerHTML = "";
+    rankingDiv.innerHTML = "Carregando...";
+
+    const ranking = [];
+
+    for(const resort of resorts){
+
+        const url =
+        `https://api.open-meteo.com/v1/forecast?latitude=${resort.lat}&longitude=${resort.lon}&current=temperature_2m&daily=snowfall_sum,temperature_2m_max,temperature_2m_min&forecast_days=7&timezone=America/Santiago`;
+
+        try{
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            const tempAtual =
+                data.current.temperature_2m;
+
+            const maxHoje =
+                data.daily.temperature_2m_max[0];
+
+            const minHoje =
+                data.daily.temperature_2m_min[0];
+
+            const neveHoje =
+                data.daily.snowfall_sum[0];
+
+            const neve7Dias =
+                data.daily.snowfall_sum
+                .reduce((a,b)=>a+b,0);
+
+            const status =
+                classificarNeve(neve7Dias);
+
+            ranking.push({
+                nome:resort.nome,
+                neve:neve7Dias
+            });
+
+            container.innerHTML += `
+            <div class="card">
+                <h2>${resort.nome}</h2>
+
+                <div class="info">
+                    🌡️ Temperatura Atual: ${tempAtual}°C<br>
+                    🔺 Máxima Hoje: ${maxHoje}°C<br>
+                    🔻 Mínima Hoje: ${minHoje}°C<br>
+                    ❄️ Neve Hoje: ${neveHoje} cm<br>
+                    🏔️ Neve Próximos 7 Dias: ${neve7Dias.toFixed(1)} cm<br>
+                    <span class="${status.classe}">
+                    ${status.texto}
+                    </span>
+                </div>
+            </div>
+            `;
+
+        }catch(error){
+
+            container.innerHTML += `
+            <div class="card">
+                <h2>${resort.nome}</h2>
+                <div class="info">
+                    Erro ao carregar dados.
+                </div>
+            </div>
+            `;
+        }
+    }
+
+    ranking.sort((a,b)=>b.neve-a.neve);
+
+    rankingDiv.innerHTML = ranking.map((r,i)=>{
+
+        const medalha =
+            ["🥇","🥈","🥉"][i] || "🏔️";
+
+        return `
+            ${medalha} ${r.nome}
+            — ${r.neve.toFixed(1)} cm
+            <br><br>
+        `;
+
+    }).join("");
+
+}
+
+carregarDados();
+
+setInterval(carregarDados, 1800000);
+
+</script>
+
+</body>
+</html>
