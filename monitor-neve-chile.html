@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Snow Decision V5 • Chile</title>
+<title>Snow Decision V6 • Chile</title>
 
 <style>
 
@@ -31,12 +30,12 @@ body{
     display:flex;
     justify-content:center;
     align-items:center;
-    text-align:center;
     flex-direction:column;
+    text-align:center;
 }
 
 .hero h1{
-    font-size:2.8rem;
+    font-size:2.6rem;
 }
 
 .hero p{
@@ -57,11 +56,16 @@ body{
     text-decoration:none;
 }
 
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:16px;
+}
+
 .card{
     background:#1e293b;
     border-radius:18px;
-    padding:22px;
-    margin-bottom:18px;
+    padding:20px;
 }
 
 .card h2{
@@ -69,9 +73,9 @@ body{
     margin-bottom:10px;
 }
 
-.info{
-    line-height:1.7;
-    color:#e2e8f0;
+.small{
+    color:#94a3b8;
+    font-size:0.9rem;
 }
 
 .badge{
@@ -89,31 +93,18 @@ body{
 .section{
     margin-top:30px;
     background:#1e293b;
-    padding:22px;
+    padding:20px;
     border-radius:18px;
 }
 
 .section h2{
     color:#60a5fa;
-    margin-bottom:12px;
+    margin-bottom:10px;
 }
 
-.timeline-item{
-    padding:10px 0;
+.dayline{
+    padding:8px 0;
     border-bottom:1px solid #334155;
-}
-
-.highlight{
-    background:#0ea5e9;
-    color:#001018;
-    padding:2px 8px;
-    border-radius:6px;
-    font-weight:bold;
-}
-
-.small{
-    font-size:0.9rem;
-    color:#94a3b8;
 }
 
 </style>
@@ -122,29 +113,19 @@ body{
 <body>
 
 <section class="hero">
-    <h1>❄️ Snow Decision V5</h1>
-    <p>Quando e onde subir a montanha no Chile</p>
+    <h1>❄️ Snow Decision V6</h1>
+    <p>Separação por estação + decisão diária</p>
 </section>
 
 <div class="container">
 
 <a class="back" href="index.html">← Voltar</a>
 
-<div id="resorts"></div>
+<div id="stations" class="grid"></div>
 
 <div class="section">
-    <h2>🏆 Melhor estação hoje</h2>
-    <div id="ranking">Carregando...</div>
-</div>
-
-<div class="section">
-    <h2>📅 Timeline de decisão (10 dias)</h2>
-    <div id="timeline">Carregando...</div>
-</div>
-
-<div class="section">
-    <h2>🔥 Melhor dia da semana</h2>
-    <div id="bestDay">Carregando...</div>
+    <h2>📅 Timeline por estação</h2>
+    <div id="timeline"></div>
 </div>
 
 </div>
@@ -172,66 +153,44 @@ const resorts = [
 }
 ];
 
-// 🧠 Snow Score V5 (mais estável e realista)
-function snowScore(tMax, tMin, precip, snow, altitude){
+// 🧠 score principal
+function snowScore(tMax,tMin,precip,snow,alt){
 
     let score = 0;
 
-    // frio (principal)
     if(tMax <= -3) score += 45;
     else if(tMax <= 2) score += 25;
     else if(tMax <= 6) score += 10;
 
     if(tMin <= -8) score += 10;
 
-    // precipitação (chance de neve)
     score += precip * 0.3;
-
-    // snowfall (peso moderado)
     score += snow * 1.2;
-
-    // altitude (base de neve natural)
-    score += Math.min(20, altitude / 180);
+    score += Math.min(20, alt / 180);
 
     return Math.min(100, Math.max(0, score));
 }
 
-// 🌨️ Powder Index (qualidade real de neve)
-function powderIndex(score, snow, precip){
-
-    return (score * 0.55) + (snow * 6) + (precip * 0.25);
+// 🌨️ qualidade de powder
+function powder(score,snow,precip){
+    return score*0.5 + snow*6 + precip*0.2;
 }
 
-function classify(score){
-
-    if(score >= 70) return { txt:"🟢 Excelente", cls:"good" };
-    if(score >= 40) return { txt:"🟡 Ok", cls:"medium" };
-    return { txt:"🔴 Fraco", cls:"bad" };
+function classify(s){
+    if(s>=70) return "🟢 Excelente";
+    if(s>=40) return "🟡 Ok";
+    return "🔴 Fraco";
 }
-
-function formatDate(dateStr){
-
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
-}
-
-let globalTimeline = [];
 
 async function load(){
 
-    const container = document.getElementById("resorts");
-    const rankingBox = document.getElementById("ranking");
-    const timelineBox = document.getElementById("timeline");
-    const bestDayBox = document.getElementById("bestDay");
+    const stations = document.getElementById("stations");
+    const timeline = document.getElementById("timeline");
 
-    container.innerHTML = "";
-    rankingBox.innerHTML = "Carregando...";
-    timelineBox.innerHTML = "Carregando...";
-    bestDayBox.innerHTML = "Carregando...";
+    stations.innerHTML = "";
+    timeline.innerHTML = "";
 
-    let ranking = [];
-
-    let timelineAgg = [];
+    let allTimelines = {};
 
     for(const r of resorts){
 
@@ -241,7 +200,7 @@ async function load(){
         const res = await fetch(url);
         const data = await res.json();
 
-        let totalScore = 0;
+        let stationHTML = "";
 
         for(let i=0;i<data.daily.time.length;i++){
 
@@ -252,69 +211,62 @@ async function load(){
 
             const score = snowScore(tMax,tMin,precip,snow,r.altitude);
 
-            totalScore += score;
+            const pow = powder(score,snow,precip);
 
-            if(!timelineAgg[i]){
-                timelineAgg[i] = {
-                    date: data.daily.time[i],
-                    score: score
-                };
-            }else{
-                timelineAgg[i].score += score;
+            if(i===0){
+
+                stationHTML += `
+                <div class="card">
+                    <h2>${r.nome}</h2>
+
+                    🌡️ Máx: ${tMax}°C<br>
+                    🌡️ Mín: ${tMin}°C<br>
+                    ☁️ Precip: ${precip}%<br>
+                    ❄️ Snow: ${snow} cm<br><br>
+
+                    🧠 Score: <b>${score.toFixed(1)}</b><br>
+                    🌨️ Powder: <b>${pow.toFixed(1)}</b><br>
+
+                    <div class="badge">${classify(score)}</div>
+                </div>
+                `;
             }
+
+            if(!allTimelines[r.nome]) allTimelines[r.nome]=[];
+
+            allTimelines[r.nome].push({
+                date:data.daily.time[i],
+                score
+            });
         }
 
-        ranking.push({
-            nome:r.nome,
-            score: totalScore
-        });
+        stations.innerHTML += stationHTML;
     }
 
-    // 🏔️ ranking estações
-    ranking.sort((a,b)=>b.score-a.score);
+    // 📅 render timeline separado por estação
+    for(const name in allTimelines){
 
-    rankingBox.innerHTML = ranking.map((r,i)=>{
+        timeline.innerHTML += `<h3 style="margin-top:15px;color:#93c5fd">${name}</h3>`;
 
-        const medal = ["🥇","🥈","🥉"][i] || "🏔️";
+        for(const d of allTimelines[name]){
 
-        return `${medal} ${r.nome} — ${r.score.toFixed(0)}<br><br>`;
-    }).join("");
+            const icon =
+                d.score>=70?"🟢":
+                d.score>=40?"🟡":"🔴";
 
-    // 📅 timeline global
-    let bestDay = { score:0, date:"" };
+            const date = new Date(d.date).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
 
-    timelineBox.innerHTML = timelineAgg.map(d=>{
-
-        const cls =
-            d.score >= 200 ? "🟢" :
-            d.score >= 120 ? "🟡" : "🔴";
-
-        if(d.score > bestDay.score){
-            bestDay = d;
+            timeline.innerHTML += `
+            <div class="dayline">
+                ${date} — ${icon} Score ${d.score.toFixed(0)}
+            </div>
+            `;
         }
-
-        return `
-        <div class="timeline-item">
-            ${formatDate(d.date)} — ${cls}
-            Score: ${d.score.toFixed(0)}
-        </div>
-        `;
-    }).join("");
-
-    // 🔥 melhor dia
-    bestDayBox.innerHTML = `
-        <div class="highlight">
-            ${formatDate(bestDay.date)} — Score ${bestDay.score.toFixed(0)}
-        </div>
-        <br>
-        <div class="small">
-            Melhor janela para ski na viagem (baseado em neve + frio + altitude)
-        </div>
-    `;
+    }
 }
 
 load();
-setInterval(load, 1800000);
+setInterval(load,1800000);
 
 </script>
 
