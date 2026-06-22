@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Monitor de Neve • Chile 2026</title>
+<title>Monitor de Neve Chile • V2</title>
 
 <style>
 
@@ -51,39 +51,45 @@ body{
 
 .back{
     display:inline-block;
-    margin-bottom:30px;
+    margin-bottom:25px;
     color:#93c5fd;
     text-decoration:none;
-}
-
-.section-title{
-    text-align:center;
-    margin:20px 0 30px;
-    color:#93c5fd;
 }
 
 .card{
     background:#1e293b;
     border-radius:18px;
     padding:25px;
-    margin-bottom:25px;
+    margin-bottom:20px;
 }
 
 .card h2{
     color:#60a5fa;
-    margin-bottom:15px;
+    margin-bottom:12px;
 }
 
 .info{
-    line-height:1.9;
+    line-height:1.8;
     color:#e2e8f0;
 }
 
+.badge{
+    display:inline-block;
+    margin-top:12px;
+    padding:6px 14px;
+    border-radius:999px;
+    font-weight:bold;
+}
+
+.good{ background:#16a34a; }
+.medium{ background:#ca8a04; }
+.bad{ background:#dc2626; }
+
 .rank{
-    background:#1e293b;
-    border-radius:18px;
-    padding:25px;
     margin-top:30px;
+    background:#1e293b;
+    padding:25px;
+    border-radius:18px;
 }
 
 .rank h2{
@@ -91,30 +97,9 @@ body{
     margin-bottom:15px;
 }
 
-footer{
-    text-align:center;
-    padding:30px;
-    color:#94a3b8;
-}
-
-.loading{
-    color:#94a3b8;
-}
-
-.good{
-    color:#4ade80;
-}
-
-.medium{
-    color:#facc15;
-}
-
-.bad{
-    color:#f87171;
-}
-
 </style>
 </head>
+
 <body>
 
 <section class="hero">
@@ -128,159 +113,142 @@ footer{
 ← Voltar para Memórias de Viagem
 </a>
 
-<h2 class="section-title">🏔️ Condições Atuais</h2>
-
 <div id="resorts"></div>
 
 <div class="rank">
-    <h2>🏆 Ranking de Neve Prevista (7 dias)</h2>
-    <div id="ranking" class="loading">
-        Carregando...
-    </div>
+    <h2>🏆 Ranking de Condições de Neve</h2>
+    <div id="ranking">Carregando...</div>
 </div>
 
 </div>
-
-<footer>
-❤️ Chile 2026 • Lucio & Fernanda
-</footer>
 
 <script>
 
 const resorts = [
 {
     nome:"Valle Nevado",
-    lat:-33.350,
-    lon:-70.253
+    lat:-33.354,
+    lon:-70.250
 },
 {
     nome:"Farellones",
-    lat:-33.349,
-    lon:-70.292
+    lat:-33.352,
+    lon:-70.289
 },
 {
     nome:"Portillo",
-    lat:-32.836,
-    lon:-70.129
+    lat:-32.844,
+    lon:-70.130
 }
 ];
 
-function classificarNeve(total){
+// Snow Score mais realista (0–100)
+function snowScore(tMax, tMin, precipProb, snowfall){
 
-    if(total >= 40){
-        return {
-            texto:"🟢 Excelente",
-            classe:"good"
-        };
-    }
+    let score = 0;
 
-    if(total >= 15){
-        return {
-            texto:"🟡 Boa",
-            classe:"medium"
-        };
-    }
+    // frio é essencial
+    if(tMax < 0) score += 45;
+    else if(tMax < 3) score += 25;
+    else if(tMax < 6) score += 10;
 
-    return {
-        texto:"🔴 Fraca",
-        classe:"bad"
-    };
+    // frio noturno ajuda estabilidade
+    if(tMin < -5) score += 10;
+
+    // probabilidade de precipitação
+    score += (precipProb * 0.25);
+
+    // snowfall do modelo (peso reduzido)
+    score += snowfall * 1.2;
+
+    return Math.min(100, Math.max(0, score));
 }
 
-async function carregarDados(){
+function classify(score){
+
+    if(score >= 70){
+        return { text:"🟢 Excelente para neve", cls:"good" };
+    }
+
+    if(score >= 40){
+        return { text:"🟡 Condições moderadas", cls:"medium" };
+    }
+
+    return { text:"🔴 Fraco / seco", cls:"bad" };
+}
+
+async function load(){
 
     const container = document.getElementById("resorts");
-    const rankingDiv = document.getElementById("ranking");
+    const rankingBox = document.getElementById("ranking");
 
     container.innerHTML = "";
-    rankingDiv.innerHTML = "Carregando...";
+    rankingBox.innerHTML = "Carregando...";
 
-    const ranking = [];
+    let ranking = [];
 
-    for(const resort of resorts){
+    for(const r of resorts){
 
         const url =
-        `https://api.open-meteo.com/v1/forecast?latitude=${resort.lat}&longitude=${resort.lon}&current=temperature_2m&daily=snowfall_sum,temperature_2m_max,temperature_2m_min&forecast_days=7&timezone=America/Santiago`;
+`https://api.open-meteo.com/v1/forecast?latitude=${r.lat}&longitude=${r.lon}&daily=temperature_2m_max,temperature_2m_min,snowfall_sum,precipitation_probability_max&forecast_days=1&timezone=America/Santiago`;
 
         try{
 
-            const response = await fetch(url);
-            const data = await response.json();
+            const res = await fetch(url);
+            const data = await res.json();
 
-            const tempAtual =
-                data.current.temperature_2m;
+            const tMax = data.daily.temperature_2m_max[0];
+            const tMin = data.daily.temperature_2m_min[0];
+            const snow = data.daily.snowfall_sum[0] || 0;
+            const precip = data.daily.precipitation_probability_max[0] || 0;
 
-            const maxHoje =
-                data.daily.temperature_2m_max[0];
+            const score = snowScore(tMax,tMin,precip,snow);
+            const status = classify(score);
 
-            const minHoje =
-                data.daily.temperature_2m_min[0];
-
-            const neveHoje =
-                data.daily.snowfall_sum[0];
-
-            const neve7Dias =
-                data.daily.snowfall_sum
-                .reduce((a,b)=>a+b,0);
-
-            const status =
-                classificarNeve(neve7Dias);
-
-            ranking.push({
-                nome:resort.nome,
-                neve:neve7Dias
-            });
+            ranking.push({ nome:r.nome, score });
 
             container.innerHTML += `
             <div class="card">
-                <h2>${resort.nome}</h2>
+                <h2>${r.nome}</h2>
 
                 <div class="info">
-                    🌡️ Temperatura Atual: ${tempAtual}°C<br>
-                    🔺 Máxima Hoje: ${maxHoje}°C<br>
-                    🔻 Mínima Hoje: ${minHoje}°C<br>
-                    ❄️ Neve Hoje: ${neveHoje} cm<br>
-                    🏔️ Neve Próximos 7 Dias: ${neve7Dias.toFixed(1)} cm<br>
-                    <span class="${status.classe}">
-                    ${status.texto}
-                    </span>
+                    🌡️ Máx: ${tMax}°C<br>
+                    🌡️ Mín: ${tMin}°C<br>
+                    ☁️ Precipitação: ${precip}%<br>
+                    ❄️ Snowfall estimado: ${snow} cm<br>
+                    🧠 Snow Score: <b>${score.toFixed(1)}</b>
+
+                    <div class="badge ${status.cls}">
+                        ${status.text}
+                    </div>
                 </div>
             </div>
             `;
-
-        }catch(error){
-
+        }
+        catch(e){
             container.innerHTML += `
             <div class="card">
-                <h2>${resort.nome}</h2>
-                <div class="info">
-                    Erro ao carregar dados.
-                </div>
+                <h2>${r.nome}</h2>
+                <div class="info">Erro ao carregar dados.</div>
             </div>
             `;
         }
     }
 
-    ranking.sort((a,b)=>b.neve-a.neve);
+    ranking.sort((a,b)=>b.score-a.score);
 
-    rankingDiv.innerHTML = ranking.map((r,i)=>{
+    rankingBox.innerHTML =
+        ranking.map((r,i)=>{
 
-        const medalha =
-            ["🥇","🥈","🥉"][i] || "🏔️";
+            const medal =
+                ["🥇","🥈","🥉"][i] || "🏔️";
 
-        return `
-            ${medalha} ${r.nome}
-            — ${r.neve.toFixed(1)} cm
-            <br><br>
-        `;
-
-    }).join("");
-
+            return `${medal} ${r.nome} — ${r.score.toFixed(1)}<br><br>`;
+        }).join("");
 }
 
-carregarDados();
-
-setInterval(carregarDados, 1800000);
+load();
+setInterval(load, 1800000);
 
 </script>
 
