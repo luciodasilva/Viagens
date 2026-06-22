@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Snow Decision V6 • Chile</title>
+<title>Snow Decision V8 • Chile</title>
 
 <style>
 
@@ -73,11 +73,6 @@ body{
     margin-bottom:10px;
 }
 
-.small{
-    color:#94a3b8;
-    font-size:0.9rem;
-}
-
 .badge{
     display:inline-block;
     margin-top:10px;
@@ -102,9 +97,14 @@ body{
     margin-bottom:10px;
 }
 
-.dayline{
+.line{
     padding:8px 0;
     border-bottom:1px solid #334155;
+}
+
+.small{
+    color:#94a3b8;
+    font-size:0.9rem;
 }
 
 </style>
@@ -113,8 +113,8 @@ body{
 <body>
 
 <section class="hero">
-    <h1>❄️ Snow Decision V6</h1>
-    <p>Separação por estação + decisão diária</p>
+    <h1>❄️ Snow Decision V8</h1>
+    <p>Versão corrigida — foco em neve REAL</p>
 </section>
 
 <div class="container">
@@ -124,7 +124,7 @@ body{
 <div id="stations" class="grid"></div>
 
 <div class="section">
-    <h2>📅 Timeline por estação</h2>
+    <h2>📅 Timeline de decisão (corrigida)</h2>
     <div id="timeline"></div>
 </div>
 
@@ -153,33 +153,54 @@ const resorts = [
 }
 ];
 
-// 🧠 score principal
-function snowScore(tMax,tMin,precip,snow,alt){
+// ❄️ V8 — score mais rígido (menos falso positivo)
+function snowScore(tMax, tMin, precip, snow, alt){
 
     let score = 0;
 
-    if(tMax <= -3) score += 45;
-    else if(tMax <= 2) score += 25;
-    else if(tMax <= 6) score += 10;
+    // ❄️ NEVE REAL manda no jogo
+    score += snow * 4.5;
 
-    if(tMin <= -8) score += 10;
+    // 🌨️ precipitação só importa se estiver MUITO frio
+    if(tMax <= 0 && precip > 0){
+        score += precip * 0.6;
+    }
 
-    score += precip * 0.3;
-    score += snow * 1.2;
-    score += Math.min(20, alt / 180);
+    // 🌡️ janela de neve ideal (bem mais restrita)
+    if(tMax <= -2 && tMax >= -10){
+        score += 20;
+    } else if(tMax <= 2){
+        score += 8;
+    } else {
+        score -= 15; // frio seco ou quente = ruim
+    }
+
+    // 🌡️ penalidade para “frio inútil”
+    if(tMax < -10){
+        score -= 5;
+    }
+
+    // 🏔️ altitude agora é só suporte leve
+    score += Math.min(10, alt / 500);
 
     return Math.min(100, Math.max(0, score));
 }
 
-// 🌨️ qualidade de powder
-function powder(score,snow,precip){
-    return score*0.5 + snow*6 + precip*0.2;
+function classify(score){
+
+    if(score >= 70) return "🟢 Dia excelente de neve";
+    if(score >= 40) return "🟡 Condições ok";
+    return "🔴 Fraco / seco";
 }
 
-function classify(s){
-    if(s>=70) return "🟢 Excelente";
-    if(s>=40) return "🟡 Ok";
-    return "🔴 Fraco";
+function icon(score){
+    if(score >= 70) return "🟢";
+    if(score >= 40) return "🟡";
+    return "🔴";
+}
+
+function format(date){
+    return new Date(date).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
 }
 
 async function load(){
@@ -190,7 +211,7 @@ async function load(){
     stations.innerHTML = "";
     timeline.innerHTML = "";
 
-    let allTimelines = {};
+    let all = {};
 
     for(const r of resorts){
 
@@ -200,7 +221,7 @@ async function load(){
         const res = await fetch(url);
         const data = await res.json();
 
-        let stationHTML = "";
+        let html = "";
 
         for(let i=0;i<data.daily.time.length;i++){
 
@@ -211,11 +232,8 @@ async function load(){
 
             const score = snowScore(tMax,tMin,precip,snow,r.altitude);
 
-            const pow = powder(score,snow,precip);
-
-            if(i===0){
-
-                stationHTML += `
+            if(i === 0){
+                html += `
                 <div class="card">
                     <h2>${r.nome}</h2>
 
@@ -225,40 +243,37 @@ async function load(){
                     ❄️ Snow: ${snow} cm<br><br>
 
                     🧠 Score: <b>${score.toFixed(1)}</b><br>
-                    🌨️ Powder: <b>${pow.toFixed(1)}</b><br>
 
                     <div class="badge">${classify(score)}</div>
+
+                    <div class="small">
+                        Score agora prioriza neve REAL, não só frio
+                    </div>
                 </div>
                 `;
             }
 
-            if(!allTimelines[r.nome]) allTimelines[r.nome]=[];
+            if(!all[r.nome]) all[r.nome] = [];
 
-            allTimelines[r.nome].push({
-                date:data.daily.time[i],
+            all[r.nome].push({
+                date: data.daily.time[i],
                 score
             });
         }
 
-        stations.innerHTML += stationHTML;
+        stations.innerHTML += html;
     }
 
-    // 📅 render timeline separado por estação
-    for(const name in allTimelines){
+    // 📅 timeline separada por estação
+    for(const name in all){
 
         timeline.innerHTML += `<h3 style="margin-top:15px;color:#93c5fd">${name}</h3>`;
 
-        for(const d of allTimelines[name]){
-
-            const icon =
-                d.score>=70?"🟢":
-                d.score>=40?"🟡":"🔴";
-
-            const date = new Date(d.date).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+        for(const d of all[name]){
 
             timeline.innerHTML += `
-            <div class="dayline">
-                ${date} — ${icon} Score ${d.score.toFixed(0)}
+            <div class="line">
+                ${format(d.date)} — ${icon(d.score)} Score ${d.score.toFixed(0)}
             </div>
             `;
         }
@@ -266,7 +281,7 @@ async function load(){
 }
 
 load();
-setInterval(load,1800000);
+setInterval(load, 1800000);
 
 </script>
 
