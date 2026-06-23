@@ -44,7 +44,7 @@ body{
 }
 
 .container{
-    max-width:1100px;
+    max-width:1200px;
     margin:auto;
     padding:40px 20px;
 }
@@ -58,7 +58,7 @@ body{
 
 .grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    grid-template-columns:repeat(auto-fit,minmax(340px,1fr));
     gap:16px;
 }
 
@@ -76,14 +76,23 @@ body{
 .badge{
     display:inline-block;
     margin-top:10px;
+    margin-bottom:10px;
     padding:6px 12px;
     border-radius:999px;
     font-weight:bold;
 }
 
-.good{ background:#16a34a; }
-.medium{ background:#ca8a04; }
-.bad{ background:#dc2626; }
+.good{
+    background:#16a34a;
+}
+
+.medium{
+    background:#ca8a04;
+}
+
+.bad{
+    background:#dc2626;
+}
 
 .section{
     margin-top:30px;
@@ -105,6 +114,37 @@ body{
 .small{
     color:#94a3b8;
     font-size:0.9rem;
+    margin-top:10px;
+}
+
+.livecam{
+    margin-top:15px;
+    border-radius:12px;
+    overflow:hidden;
+}
+
+.livecam iframe{
+    width:100%;
+    height:220px;
+    border:none;
+    background:#000;
+}
+
+.fullscreen-btn{
+    display:block;
+    margin-top:10px;
+    text-align:center;
+    background:#2563eb;
+    color:white;
+    padding:10px;
+    border-radius:10px;
+    text-decoration:none;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.fullscreen-btn:hover{
+    background:#1d4ed8;
 }
 
 </style>
@@ -137,53 +177,57 @@ const resorts = [
     nome:"Valle Nevado",
     lat:-33.354,
     lon:-70.250,
-    altitude:3200
+    altitude:3200,
+    liveEmbed:"https://www.youtube.com/embed/tWNxInShxZI",
+    liveLink:"https://www.youtube.com/live/tWNxInShxZI"
 },
 {
     nome:"Farellones",
     lat:-33.352,
     lon:-70.289,
-    altitude:2400
+    altitude:2400,
+    liveEmbed:"https://www.youtube.com/embed/_6v5h_K8xJ8",
+    liveLink:"https://www.youtube.com/live/_6v5h_K8xJ8"
 },
 {
     nome:"Portillo",
     lat:-32.844,
     lon:-70.130,
-    altitude:2900
+    altitude:2900,
+    liveEmbed:"https://g3.ipcamlive.com/player/player.php?alias=laguna",
+    liveLink:"https://g3.ipcamlive.com/player/player.php?alias=laguna"
 }
 ];
 
-// ❄️ V8 — score mais rígido (menos falso positivo)
-function snowScore(tMax, tMin, precip, snow, alt){
+// V8 - Score ajustado para neve real
+
+function snowScore(tMax,tMin,precip,snow,alt){
 
     let score = 0;
 
-    // ❄️ NEVE REAL manda no jogo
     score += snow * 4.5;
 
-    // 🌨️ precipitação só importa se estiver MUITO frio
     if(tMax <= 0 && precip > 0){
         score += precip * 0.6;
     }
 
-    // 🌡️ janela de neve ideal (bem mais restrita)
     if(tMax <= -2 && tMax >= -10){
         score += 30;
-    } else if(tMax <= 2){
+    }
+    else if(tMax <= 2){
         score += 15;
-    } else {
-        score -= 15; // frio seco ou quente = ruim
+    }
+    else{
+        score -= 15;
     }
 
-    // 🌡️ penalidade para “frio inútil”
     if(tMax < -10){
         score -= 5;
     }
 
-    // 🏔️ altitude agora é só suporte leve
-    score += Math.min(10, alt / 500);
+    score += Math.min(10,alt/500);
 
-    return Math.min(100, Math.max(0, score));
+    return Math.min(100,Math.max(0,score));
 }
 
 function classify(score){
@@ -194,13 +238,21 @@ function classify(score){
 }
 
 function icon(score){
+
     if(score >= 70) return "🟢";
     if(score >= 40) return "🟡";
     return "🔴";
 }
 
 function format(date){
-    return new Date(date).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+
+    return new Date(date).toLocaleDateString(
+        "pt-BR",
+        {
+            day:"2-digit",
+            month:"2-digit"
+        }
+    );
 }
 
 async function load(){
@@ -225,55 +277,94 @@ async function load(){
 
         for(let i=0;i<data.daily.time.length;i++){
 
-            const tMax = data.daily.temperature_2m_max[i];
-            const tMin = data.daily.temperature_2m_min[i];
-            const snow = data.daily.snowfall_sum[i] || 0;
-            const precip = data.daily.precipitation_probability_max[i] || 0;
+            const tMax =
+                data.daily.temperature_2m_max[i];
 
-            const score = snowScore(tMax,tMin,precip,snow,r.altitude);
+            const tMin =
+                data.daily.temperature_2m_min[i];
+
+            const snow =
+                data.daily.snowfall_sum[i] || 0;
+
+            const precip =
+                data.daily.precipitation_probability_max[i] || 0;
+
+            const score =
+                snowScore(
+                    tMax,
+                    tMin,
+                    precip,
+                    snow,
+                    r.altitude
+                );
 
             if(i === 0){
+
                 html += `
                 <div class="card">
+
                     <h2>${r.nome}</h2>
 
                     🌡️ Máx: ${tMax}°C<br>
                     🌡️ Mín: ${tMin}°C<br>
-                    ☁️ Precip: ${precip}%<br>
-                    ❄️ Snow: ${snow} cm<br><br>
+                    ☁️ Precipitação: ${precip}%<br>
+                    ❄️ Neve prevista: ${snow} cm<br><br>
 
                     🧠 Score: <b>${score.toFixed(1)}</b><br>
 
-                    <div class="badge">${classify(score)}</div>
+                    <div class="badge">
+                        ${classify(score)}
+                    </div>
 
                     <div class="small">
-                        Score agora prioriza neve REAL, não só frio
+                        Score baseado principalmente em neve real prevista.
                     </div>
+
+                    <div class="livecam">
+                        <iframe
+                            src="${r.liveEmbed}"
+                            allowfullscreen
+                            loading="lazy">
+                        </iframe>
+                    </div>
+
+                    <a
+                        class="fullscreen-btn"
+                        href="${r.liveLink}"
+                        target="_blank">
+                        🔍 Abrir transmissão
+                    </a>
+
                 </div>
                 `;
             }
 
-            if(!all[r.nome]) all[r.nome] = [];
+            if(!all[r.nome]){
+                all[r.nome] = [];
+            }
 
             all[r.nome].push({
-                date: data.daily.time[i],
-                score
+                date:data.daily.time[i],
+                score:score
             });
         }
 
         stations.innerHTML += html;
     }
 
-    // 📅 timeline separada por estação
     for(const name in all){
 
-        timeline.innerHTML += `<h3 style="margin-top:15px;color:#93c5fd">${name}</h3>`;
+        timeline.innerHTML +=
+        `<h3 style="margin-top:15px;color:#93c5fd">${name}</h3>`;
 
         for(const d of all[name]){
 
             timeline.innerHTML += `
             <div class="line">
-                ${format(d.date)} — ${icon(d.score)} Score ${d.score.toFixed(0)}
+                ${format(d.date)}
+                —
+                ${icon(d.score)}
+                Score ${d.score.toFixed(0)}
             </div>
             `;
         }
@@ -281,7 +372,11 @@ async function load(){
 }
 
 load();
-setInterval(load, 1800000);
+
+setInterval(
+    load,
+    1800000
+);
 
 </script>
 
